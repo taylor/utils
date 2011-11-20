@@ -1,0 +1,72 @@
+#!/bin/bash
+
+_DEBUG_ON=false
+
+# NOTE: GID 20 is staff group -- see more with: dscl localhost list groups gid
+DEFAULT_GID=20
+DEFAULT_GROUP=staff
+DEFAULT_SHELL=/bin/bash
+DEFAULT_HOME_BASE=/Users
+
+# Data Source for DSCL
+#OSXDS="."
+OSXDS="localhost"
+
+me=$(basename $0)
+
+usage() {
+  printf "
+Usage  
+  $me <username>
+
+Note: Probably have to run with sudo
+"
+  #$me <username> [-home <path>] [-uid <id>] [-gid <id>] [-shell <path>]
+}
+
+_create_user() {
+  target_user="$1"
+  target_home="$2"
+  target_shell="$3"
+  target_uid="$4"
+  target_gid="$5"
+  target_name="$6"
+
+  OSX_USER="/Users/$target_user"
+  dscl ${OSXDS} -create "${OSX_USER}" && \
+    dscl ${OSXDS} -create "${OSX_USER}" NFSHomeDirectory "$target_home" && \
+    dscl ${OSXDS} -create "${OSX_USER}" UserShell "$target_shell" && \
+    dscl ${OSXDS} -create "${OSX_USER}" UniqueID "$target_uid" && \
+    dscl ${OSXDS} -create "${OSX_USER}" PrimaryGroupID "$target_gid" && \
+    ( [ ! -z "$target_name" ] &&  dscl ${OSXDS} -create "${OSX_USER}" RealName "$target_name" )
+  return $?
+}
+
+log()  { printf "$*\n" ; return $? ;  }
+fail() { log "\nERROR: $*\n" ; exit 1 ; }
+
+# TODO: accept more options
+if [ -z "$1" ] ; then
+  usage
+  exit 0
+fi
+
+target_user="$1"
+target_shell=$DEFAULT_SHELL
+target_uid=$(($(dscl ${OSXDS} -list /Users uid | sort -nk2 | tail -n 1 | awk '{print $2}')+1))
+target_gid=${DEFAULT_GID}
+target_name="Marry Poppins $RANDOM"
+home_base=$DEFAULT_HOME_BASE
+target_home="${home_base}/$target_user"
+target_group="${DEFAULT_GROUP}"
+
+
+[ "$_DEBUG_ON" ] && set -x
+_create_user "$target_user" "$target_home" "$target_shell" "$target_uid" "$target_gid" "$target_name"
+[ "$?" = 0 ] && mkdir -p "$target_home"
+
+if [ "$?" = 0 -a "$target_home" != "/" ] ; then
+  chown -R "${target_user}:${target_group}" "${target_home}"
+fi
+
+set +x
