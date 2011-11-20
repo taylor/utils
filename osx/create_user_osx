@@ -9,8 +9,7 @@ DEFAULT_SHELL=/bin/bash
 DEFAULT_HOME_BASE=/Users
 
 # Data Source for DSCL
-#OSXDS="."
-OSXDS="localhost"
+OSXDS="."
 
 me=$(basename $0)
 
@@ -35,6 +34,7 @@ _create_user() {
   OSX_USER="/Users/$target_user"
   dscl ${OSXDS} -create "${OSX_USER}" && \
     dscl ${OSXDS} -create "${OSX_USER}" NFSHomeDirectory "$target_home" && \
+    dscl ${OSXDS} -create "${OSX_USER}" Password "*" && \
     dscl ${OSXDS} -create "${OSX_USER}" UserShell "$target_shell" && \
     dscl ${OSXDS} -create "${OSX_USER}" UniqueID "$target_uid" && \
     dscl ${OSXDS} -create "${OSX_USER}" PrimaryGroupID "$target_gid" && \

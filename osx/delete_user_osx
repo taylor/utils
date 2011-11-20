@@ -9,8 +9,7 @@ DEFAULT_SHELL=/bin/bash
 DEFAULT_HOME_BASE=/Users
 
 # Data Source for DSCL
-#OSXDS="."
-OSXDS="localhost"
+OSXDS="."
 
 me=$(basename $0)
 
@@ -37,6 +36,7 @@ _delete_user() {
 
   OSX_USER="/Users/$target_user"
   dscl ${OSXDS} -delete "${OSX_USER}" NFSHomeDirectory  && \
+    dscl ${OSXDS} -delete "${OSX_USER}" Password  && \
     dscl ${OSXDS} -delete "${OSX_USER}" UserShell  && \
     dscl ${OSXDS} -delete "${OSX_USER}" UniqueID  && \
     dscl ${OSXDS} -delete "${OSX_USER}" PrimaryGroupID  && \
