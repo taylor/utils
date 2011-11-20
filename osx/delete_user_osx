@@ -2,14 +2,10 @@
 
 _DEBUG_ON=false
 
-# NOTE: GID 20 is staff group -- see more with: dscl ${OSXDS} list groups gid
-DEFAULT_GID=20
-DEFAULT_GROUP=staff
-DEFAULT_SHELL=/bin/bash
-DEFAULT_HOME_BASE=/Users
-
 # Data Source for DSCL
 OSXDS="."
+OSX_USER=
+OSX_USER_PATH=/Users
 
 me=$(basename $0)
 
@@ -26,22 +22,31 @@ Note: Probably have to run with sudo
   #$me <username> [-home <path>] [-uid <id>] [-gid <id>] [-shell <path>]
 }
 
-_delete_user() {
-  target_user="$1"
-  target_home="$2"
-  target_shell="$3"
-  target_uid="$4"
-  target_gid="$5"
-  target_name="$6"
+_dc() {
+  dscl ${OSXDS} $*
+}
 
-  OSX_USER="/Users/$target_user"
-  dscl ${OSXDS} -delete "${OSX_USER}" NFSHomeDirectory  && \
-    dscl ${OSXDS} -delete "${OSX_USER}" Password  && \
-    dscl ${OSXDS} -delete "${OSX_USER}" UserShell  && \
-    dscl ${OSXDS} -delete "${OSX_USER}" UniqueID  && \
-    dscl ${OSXDS} -delete "${OSX_USER}" PrimaryGroupID  && \
-    ( [ ! -z "$target_name" ] &&  dscl ${OSXDS} -delete "${OSX_USER}" RealName  ) && \
-    dscl ${OSXDS} -delete "${OSX_USER}"
+_dc_delete_user_attr() {
+  user="$1"
+  attribute="$2"
+  _dc -delete "$OSX_USER_PATH/$user" "$attribute"
+}
+
+_dc_delete_user() {
+  user="$1"
+  _dc -delete "$OSX_USER_PATH/$user"
+}
+
+_delete_user() {
+  tu="$1"
+
+  _dc_delete_user_attr $tu NFSHomeDirectory
+  _dc_delete_user_attr $tu Password
+  _dc_delete_user_attr $tu UserShell
+  _dc_delete_user_attr $tu UniqueID
+  _dc_delete_user_attr $tu PrimaryGroupID
+  _dc_delete_user_attr $tu RealName
+  _dc_delete_user "$tu"
   return $?
 }
 
@@ -52,13 +57,7 @@ if [ -z "$1" ] ; then
 fi
 
 target_user="$1"
-target_shell=$DEFAULT_SHELL
-target_uid=$(($(dscl ${OSXDS} -list /Users uid | sort -nk2 | tail -n 1 | awk '{print $2}')+1))
-target_gid=${DEFAULT_GID}
-target_name="Marry Poppins $RANDOM"
-home_base=$DEFAULT_HOME_BASE
-target_home="${home_base}/$target_user"
-target_group="${DEFAULT_GROUP}"
+OSX_USER="/Users/$target_user"
 
 eval $(dscl ${OSXDS} read /Users/$target_user | grep -Ev '^ |RealName' | sed 's/: /=/')
 eval $(dscl ${OSXDS} read /Users/$target_user RealName | tr -d '\n' | sed 's/: /="/;s/$/"/')
@@ -69,12 +68,10 @@ target_uid=${UniqueID}
 target_shell=${UserShell}
 target_name=${RealName}
 
-
-
 echo -e "Attempting to delete $target_user with attributes\n\thome: $target_home, shell: $target_shell uid: $target_uid gid: $target_gid name: $target_name" |fmt
 
 [ "$_DEBUG_ON" = true ] && set -x
-_delete_user "$target_user" "$target_home" "$target_shell" "$target_uid" "$target_gid" "$target_name"
+_delete_user "$target_user"
 
 [ "$?" = 0 ] && log "You should remove ${target_home} now"
 
