@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 RBENV_HOME=$HOME/.rbenv
+RBENV_REPO="git://github.com/sstephenson/rbenv.git"
+RUBY_BUILD_REPO="git://github.com/sstephenson/ruby-build.git"
 
 shopt -s extglob
 PS4="+ \${BASH_SOURCE##\${rvm_path:-}} : \${FUNCNAME[0]:+\${FUNCNAME[0]}()}  \${LINENO} > "
@@ -14,10 +16,10 @@ fail() { log "\nERROR: $*\n" ; exit 1 ; }
 
 log "Attempting install of rbenv and ruby-build"
 
-git clone git://github.com/sstephenson/rbenv.git ${RBENV_HOME} && \
+git clone $RBENV_REPO ${RBENV_HOME} && \
   echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile && \
   echo 'eval "$(rbenv init -)"' >> ~/.bash_profile && \
-git clone git://github.com/sstephenson/ruby-build.git ~/ruby-build-install && \
+git clone "$RUBY_BUILD_REPO" ~/ruby-build-install && \
   cd ~/ruby-build-install && \
   chmod +x install.sh && \
   PREFIX=${RBENV_HOME} ./install.sh && \
