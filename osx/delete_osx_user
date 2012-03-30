@@ -1,6 +1,6 @@
 #!/bin/bash
 
-_DEBUG_ON=false
+_DEBUG_ON=true
 
 # Data Source for DSCL
 OSXDS="."
