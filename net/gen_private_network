@@ -1,14 +1,48 @@
 #!/usr/bin/env ruby
 
-@net172_octet_rejects = [nil, %w(16 20 24 31), %w(0 1)]
-@net192_octet_rejects = [nil, nil, %w(0 1 2 3 4 5 6 7 8 9 10 168 254)]
+@net10_octet_rejects  = [nil,%w(0 1 2 3 4 5 6 7 8 9 10 254),
+                         %w(0 1 2 3 4 5 6 7 8 9 10 254),nil]
+@net172_octet_rejects = [nil,%w(16 20 24 31), %w(0 1),nil]
+@net192_octet_rejects = [nil,nil,%w(0 1 2 3 4 5 6 7 8 9 10 168 254),nil]
 
-def generate_net172(n=:C)
+def generate_net(n, c=:C)
+  case n
+  when 10
+    generate_net10(c)
+  when 172
+    generate_net172(c)
+  when 192
+    generate_net192(c)
+  else
+    nil
+  end
+end
+
+def generate_net10(c=:C)
+  net=10
+  octet_rejects=@net10_octet_rejects
+  octet2_space=256
+  octet3_space=256
+
+  begin
+    octet_2 = rand(octet2_space).to_s
+  end while octet_rejects[1].include?(octet_2)
+
+  return "#{net}.#{octet_2}" if c == :B
+
+  begin
+  octet_3 = rand(octet3_space).to_s
+  end while octet_rejects[2].include?(octet_3)
+
+  "#{net}.#{octet_2}.#{octet_3}"
+end
+
+def generate_net172(c=:C)
   begin
     octet_2 = (rand(16) + 16).to_s
   end while @net172_octet_rejects[1].include?(octet_2)
 
-  return "172.#{octet_2}" if n == :B
+  return "172.#{octet_2}" if c == :B
 
   begin
   octet_3 = rand(256).to_s
@@ -25,11 +59,41 @@ def generate_net192(n=:C)
   "192.168.#{octet_3}"
 end
 
+def do_gen(n=172)
+  case n
+  when 10
+    text = <<-END.gsub(/^ {6}/, '')
+      Rejects (A.A.R.R): #{@net10_octet_rejects.compact.map{|x| x.join(', ')}.join(' . ')}
+      Class B: #{generate_net(10, :B)}
+      Class C: #{generate_net(10, :C)}
+    END
+  when 172
+    text = <<-END.gsub(/^ {6}/, '')
+      Rejects (A.A.R.R): #{@net172_octet_rejects.compact.map{|x| x.join(', ')}.join(' . ')}
+      Class B: #{generate_net(172, :B)}
+      Class C: #{generate_net(172, :C)}
+    END
+  when 192
+    text = <<-END.gsub(/^ {6}/, '')
+      Rejects (A.A.A.R): #{@net192_octet_rejects.compact.join(', ')}
+      Class C: #{generate_net(192, :C)}
+    END
+  else
+    text = "Unknown network request: #{n}"
+  end
+  text
+end
+
 if ARGV[0] == "192"
-  puts "Rejects are: #{@net192_octet_rejects.join(' ')}"
-  puts "Class C: #{generate_net192 :C}"
+  puts do_gen(192)
+elsif ARGV[0] == "172"
+  puts do_gen(172)
+elsif ARGV[0] == "10"
+  puts do_gen(10)
 else
-  puts "Rejects are: #{@net172_octet_rejects.inspect}"
-  puts "Class B: #{generate_net172 :B}"
-  puts "Class C: #{generate_net172 :C}"
+  puts do_gen(192)
+  puts ""
+  puts do_gen(172)
+  puts ""
+  puts do_gen(10)
 end
