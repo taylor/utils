@@ -1,0 +1,109 @@
+#!/bin/bash
+
+## Git script to help generate or add to .gitignore files
+##
+## It utilizes the big list of templates from
+##    https://github.com/github/gitignore
+## 
+## 2012 (c) Taylor Carpenter
+##
+## LICENSE: Public Domain
+
+## Download URLs
+DL_IGNORE_URL="https://raw.github.com/github/gitignore/master/"
+IGNORE_TREE_URL="https://api.github.com/repos/github/gitignore/git/trees/master"
+
+CACHE_IGNORE_LIST="$HOME/.cache/gitignore_list"
+CACHE_IGNORE_NAMES="$HOME/.cache/gitignore_list_names"
+
+function init_cache() {
+  if [ ! -d  $HOME/.cache ] ; then
+    mkdir -p $HOME/.cache 2> /dev/null
+  fi
+
+  if [ ! -f $CACHE_IGNORE_LIST ] ; then
+    curl -o $CACHE_IGNORE_LIST -qs $IGNORE_TREE_URL 
+  fi
+}
+
+function get_ignore_names() {
+    grep -E 'path":.*\.gitignore' $CACHE_IGNORE_LIST \
+      | sed 's/.* "\([^"]*\).gitignore",/\1/' \
+      > $CACHE_IGNORE_NAMES
+}
+
+function list_ignore_names() {
+  if [ ! -f $CACHE_IGNORE_NAMES -o $CACHE_IGNORE_NAMES -ot $CACHE_IGNORE_LIST ] ; then
+    get_ignore_names
+  fi
+  cat $CACHE_IGNORE_NAMES
+}
+
+function display_default_gitignore() {
+  cat <<-EOM | sed 's/^ *//'
+  *~
+  *.lock
+  .*.swp
+  *.log
+  tmp/
+  db/*
+  *.DS_Store
+  *#
+  .svn
+  .pyc
+EOM
+}
+
+function get_ignore_file() {
+  curl -qs "${DL_IGNORE_URL}/${1}.gitignore"
+}
+
+function show_gitignore() {
+  if [ "$1" = "" ] ; then
+      display_default_gitignore
+  else
+    match=$(grep -i "$1" "$CACHE_IGNORE_NAMES")
+    r=$?
+    if [ "$r" = 0 ] ; then
+      get_ignore_file "$match"
+    else
+      echo "Could not find that name.  See the list command"
+    fi
+  fi
+}
+
+function add_ignores() {
+  for i in "$@"
+  do
+    echo $i | tee -a ".gitignore"
+  done
+}
+
+#### Execution Starts Here
+
+if [ ! "$1" = "init" -a ! "$1" = "list" -a ! "$1" = "add"  ] ; then
+  echo "usage: git ignore <init [TYPE]|list|add <pattern> [pattern2] [...]>"
+  exit 1
+fi
+
+init_cache
+
+case $1 in
+  "init")
+    show_gitignore "$2"
+    ;;
+  "list")
+    list_ignore_names
+    ;;
+  "add")
+    if [ "$2" = "" ] ; then
+      echo "Must give at least one pattern to ignore"
+      exit 1
+    fi
+    shift
+    add_ignores "$@"
+    ;;
+  *)
+    echo "Unknown command $1"
+    ;;
+esac
