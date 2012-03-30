@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+
+@net172_octet_rejects = [nil, %w(16 20 24 31), %w(0 1)]
+@net192_octet_rejects = [nil, nil, %w(0 1 2 3 4 5 6 7 8 9 10 168 254)]
+
+def generate_net172(n=:C)
+  begin
+    octet_2 = (rand(16) + 16).to_s
+  end while @net172_octet_rejects[1].include?(octet_2)
+
+  return "172.#{octet_2}" if n == :B
+
+  begin
+  octet_3 = rand(256).to_s
+  end while @net172_octet_rejects[2].include?(octet_3)
+
+  "172.#{octet_2}.#{octet_3}"
+end
+
+def generate_net192(n=:C)
+  begin
+  octet_3 = rand(256).to_s
+  end while @net192_octet_rejects[2].include?(octet_3)
+
+  "192.168.#{octet_3}"
+end
+
+if ARGV[0] == "192"
+  puts "Rejects are: #{@net192_octet_rejects.join(' ')}"
+  puts "Class C: #{generate_net192 :C}"
+else
+  puts "Rejects are: #{@net172_octet_rejects.inspect}"
+  puts "Class B: #{generate_net172 :B}"
+  puts "Class C: #{generate_net172 :C}"
+end
