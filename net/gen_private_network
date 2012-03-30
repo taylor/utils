@@ -8,25 +8,34 @@
 def generate_net(n, c=:C)
   case n
   when 10
-    generate_net10(c)
+    net=10
+    octet_rejects=@net10_octet_rejects
+    octet2_space=256
+    octet2_bump=0
+    octet3_space=256
   when 172
-    generate_net172(c)
+    net=172
+    octet_rejects=@net172_octet_rejects
+    octet2_space=16
+    octet2_bump=16
+    octet3_space=256
   when 192
-    generate_net192(c)
+    net=192
+    octet_rejects=@net172_octet_rejects
+    octet2_space=256
+    octet2_bump=0
+    octet3_space=256
   else
-    nil
+    return "Invalid network: #{n}"
   end
-end
 
-def generate_net10(c=:C)
-  net=10
-  octet_rejects=@net10_octet_rejects
-  octet2_space=256
-  octet3_space=256
-
-  begin
-    octet_2 = rand(octet2_space).to_s
-  end while octet_rejects[1].include?(octet_2)
+  if net == 192
+    octet_2 = 168
+  else
+    begin
+      octet_2 = (rand(octet2_space)+octet2_bump).to_s
+    end while octet_rejects[1].include?(octet_2)
+  end
 
   return "#{net}.#{octet_2}" if c == :B
 
@@ -35,28 +44,6 @@ def generate_net10(c=:C)
   end while octet_rejects[2].include?(octet_3)
 
   "#{net}.#{octet_2}.#{octet_3}"
-end
-
-def generate_net172(c=:C)
-  begin
-    octet_2 = (rand(16) + 16).to_s
-  end while @net172_octet_rejects[1].include?(octet_2)
-
-  return "172.#{octet_2}" if c == :B
-
-  begin
-  octet_3 = rand(256).to_s
-  end while @net172_octet_rejects[2].include?(octet_3)
-
-  "172.#{octet_2}.#{octet_3}"
-end
-
-def generate_net192(n=:C)
-  begin
-  octet_3 = rand(256).to_s
-  end while @net192_octet_rejects[2].include?(octet_3)
-
-  "192.168.#{octet_3}"
 end
 
 def do_gen(n=172)
